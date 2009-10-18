@@ -1,0 +1,1 @@
+Error handling using extensible exceptions outside the IO monad.
