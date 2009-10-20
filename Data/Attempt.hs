@@ -1,10 +1,11 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Rank2Types #-}
 ---------------------------------------------------------
 --
--- Module        : Data.Object
+-- Module        : Data.Attempt
 -- Copyright     : Michael Snoyman
 -- License       : BSD3
 --
@@ -16,10 +17,7 @@
 ---------------------------------------------------------
 module Data.Attempt
     ( Attempt (..)
-    , FailedAttempt (..)
     , FromAttempt (..)
-    , attemptJoin
-    , attemptLookup
     , attempt
     , AttemptHandler
     , makeHandler
@@ -29,6 +27,7 @@ import qualified Control.Exception as E
 import Control.Monad (ap)
 import Control.Applicative
 import Data.Generics
+import Control.Monad.Attempt.Class
 
 data Attempt v =
     Success v
@@ -38,10 +37,9 @@ data Attempt v =
 instance Show v => Show (Attempt v) where
     show (Success v) = "Success " ++ show v
     show (Failure e) = "Failure " ++ show e
-
-newtype FailedAttempt = FailedAttempt { getMessage :: String }
-    deriving (Show, Eq, Data, Typeable)
-instance E.Exception FailedAttempt
+instance MonadAttempt Attempt where
+    success = Success
+    failure = Failure
 
 instance Functor Attempt where
     fmap f (Success v) = Success $ f v
@@ -51,7 +49,6 @@ instance Applicative Attempt where
     (<*>) = ap
 instance Monad Attempt where
     return = Success
-    fail = Failure . FailedAttempt
     (Success v) >>= f = f v
     (Failure e) >>= _ = Failure e
 
@@ -74,24 +71,9 @@ instance FromAttempt (Either E.SomeException) where
     fromAttempt (Success v) = Right v
     fromAttempt (Failure e) = Left $ E.SomeException e
 
-attemptJoin :: (FromAttempt m, Monad m) => m (Attempt v) -> m v
-attemptJoin m = m >>= fromAttempt
-
-data KeyNotFound k v = KeyNotFound k [(k, v)]
-    deriving Typeable
-instance Show k => Show (KeyNotFound k v) where
-    show (KeyNotFound key _) = "Could not find requested key: " ++ show key
-instance (Typeable k, Typeable v, Show k) => E.Exception (KeyNotFound k v)
-
-attemptLookup :: (Typeable k, Typeable v, Show k, Eq k)
-              => k
-              -> [(k, v)]
-              -> Attempt v
-attemptLookup k m = maybe (Failure $ KeyNotFound k m) Success $ lookup k m
-
-attempt :: Attempt v -> (forall e. E.Exception e => e -> v) -> v
-attempt (Success v) _ = v
-attempt (Failure e) f = f e
+attempt :: (forall e. E.Exception e => e -> b) -> (a -> b) -> Attempt a -> b
+attempt _ f (Success v) = f v
+attempt f _ (Failure e) = f e
 
 data AttemptHandler v = forall e. E.Exception e => AttemptHandler (e -> v)
 
