@@ -11,6 +11,9 @@
 -- Portability   : portable
 --
 ---------------------------------------------------------
+
+-- | Provide a monad transformer for the attempt monad, which allows the
+-- reporting of errors using extensible exceptions.
 module Control.Monad.Attempt
     ( AttemptT (..)
     , evalAttemptT
@@ -46,6 +49,13 @@ instance (Functor m, MonadIO m) => MonadIO (AttemptT m) where
 instance (Functor m, Monad m) => FromAttempt (AttemptT m) where
     fromAttempt = attempt failure return
 
+-- | Instances of 'FromAttempt' specify a manner for embedding 'Attempt'
+-- failures directly into the target data type. For example, the 'IO' instance
+-- simply throws a runtime error. This is a convenience wrapper when you simply
+-- want to use that default action.
+--
+-- So given a type 'AttemptT' 'IO' 'Int', this function will convert it to 'IO'
+-- 'Int', throwing any exceptions in the original value.
 evalAttemptT :: (Monad m, FromAttempt m)
              => AttemptT m v
              -> m v
