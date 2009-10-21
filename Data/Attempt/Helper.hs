@@ -43,7 +43,7 @@ lookup :: (Typeable k, Typeable v, Show k, Eq k, MonadAttempt m)
        => k
        -> [(k, v)]
        -> m v
-lookup k m = maybe (failure $ KeyNotFound k m) success $ Prelude.lookup k m
+lookup k m = maybe (failure $ KeyNotFound k m) return $ Prelude.lookup k m
 
 data EmptyList = EmptyList
     deriving (Show, Typeable)
@@ -51,19 +51,19 @@ instance E.Exception EmptyList
 
 tail :: MonadAttempt m => [a] -> m [a]
 tail [] = failure EmptyList
-tail (_:rest) = success rest
+tail (_:rest) = return rest
 
 init :: MonadAttempt m => [a] -> m [a]
 init [] = failure EmptyList
-init x = success $ Prelude.init x
+init x = return $ Prelude.init x
 
 head :: MonadAttempt m => [a] -> m a
 head [] = failure EmptyList
-head (x:_) = success x
+head (x:_) = return x
 
 last :: MonadAttempt m => [a] -> m a
 last [] = failure EmptyList
-last x = success $ Prelude.last x
+last x = return $ Prelude.last x
 
 newtype CouldNotRead = CouldNotRead String
     deriving (Typeable, Show)
@@ -71,7 +71,7 @@ instance E.Exception CouldNotRead
 
 read :: (MonadAttempt m, Read a) => String -> m a
 read s = case [x | (x,t) <- reads s, ("","") <- lex t] of
-            [x] -> success x
+            [x] -> return x
             _ -> failure $ CouldNotRead s
 
 data NegativeIndex = NegativeIndex
@@ -82,7 +82,7 @@ data OutOfBoundsIndex = OutOfBoundsIndex
 instance E.Exception OutOfBoundsIndex
 at :: MonadAttempt m => [a] -> Int -> m a
 at [] _ = failure OutOfBoundsIndex
-at (x:_) 0 = success x
+at (x:_) 0 = return x
 at (_:xs) n
     | n < 0 = failure NegativeIndex
     | otherwise = at xs $ n - 1

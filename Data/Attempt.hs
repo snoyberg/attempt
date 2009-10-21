@@ -38,7 +38,6 @@ instance Show v => Show (Attempt v) where
     show (Success v) = "Success " ++ show v
     show (Failure e) = "Failure " ++ show e
 instance MonadAttempt Attempt where
-    success = Success
     failure = Failure
 
 instance Functor Attempt where
@@ -56,20 +55,15 @@ class FromAttempt a where
     fromAttempt :: Attempt v -> a v
 
 instance FromAttempt IO where
-    fromAttempt (Success v) = return v
-    fromAttempt (Failure e) = E.throwIO e
+    fromAttempt = attempt E.throwIO return
 instance FromAttempt Maybe where
-    fromAttempt (Success v) = Just v
-    fromAttempt (Failure _) = Nothing
+    fromAttempt = attempt (const Nothing) Just
 instance FromAttempt [] where
-    fromAttempt (Success v) = [v]
-    fromAttempt (Failure _) = []
+    fromAttempt = attempt (const []) (: [])
 instance FromAttempt (Either String) where
-    fromAttempt (Success v) = Right v
-    fromAttempt (Failure e) = Left $ show e
+    fromAttempt = attempt (Left . show) Right
 instance FromAttempt (Either E.SomeException) where
-    fromAttempt (Success v) = Right v
-    fromAttempt (Failure e) = Left $ E.SomeException e
+    fromAttempt = attempt (Left . E.SomeException) Right
 
 attempt :: (forall e. E.Exception e => e -> b) -> (a -> b) -> Attempt a -> b
 attempt _ f (Success v) = f v

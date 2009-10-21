@@ -19,9 +19,7 @@ module Control.Monad.Attempt.Class
 import Control.Exception
 import Data.Generics
 
-class Monad m => MonadAttempt m where
-    success :: v -> m v
-    success = return
+class (Functor m, Monad m) => MonadAttempt m where
     failure :: Exception e => e -> m v
     failureString :: String -> m v
     failureString = failure . StringException
