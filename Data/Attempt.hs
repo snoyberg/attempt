@@ -23,6 +23,7 @@
 module Data.Attempt
     ( Attempt (..)
     , FromAttempt (..)
+    , fa
     , attempt
     , makeHandler
     , AttemptHandler
@@ -76,6 +77,10 @@ instance MonadAttempt Attempt where
 -- 'Success'.
 class FromAttempt a where
     fromAttempt :: Attempt v -> a v
+
+-- | A shortcut for 'fromAttempt'.
+fa :: FromAttempt a => Attempt v -> a v
+fa = fromAttempt
 
 instance FromAttempt IO where
     fromAttempt = attempt E.throwIO return

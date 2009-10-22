@@ -28,14 +28,19 @@ module Data.Attempt.Helper
     , last
     , read
     , at
+    , assert
+      -- * IO functions with exceptions handled
+    , readFile
     ) where
 
-import Prelude hiding (lookup, tail, init, head, last, read)
+import Prelude hiding (lookup, tail, init, head, last, read, readFile)
 import qualified Prelude
 import Data.Attempt
 import Control.Monad.Attempt.Class
 import Data.Generics
 import qualified Control.Exception as E
+import Control.Monad (liftM)
+import Control.Monad.Trans
 
 -- | This is not a simple translation of the Control.Monad.join function.
 -- Instead, for 'Monad's which are instances of 'FromAttempt', it removes the
@@ -105,3 +110,23 @@ at (x:_) 0 = return x
 at (_:xs) n
     | n < 0 = failure NegativeIndex
     | otherwise = at xs $ n - 1
+
+-- | Assert a value to be true. If true, returns the first value as a succss.
+-- Otherwise, returns the second value as a failure.
+assert :: (MonadAttempt m, E.Exception e)
+       => Bool
+       -> v
+       -> e
+       -> m v
+assert b v e = if b then return v else failure e
+
+-- | The standard readFile function with any 'E.IOException's returned as a
+-- failure instead of a runtime exception.
+readFile :: (MonadAttempt m, MonadIO m) => FilePath -> m String
+readFile fp = do
+    contents <- liftIO $ E.handle
+                    (\e -> return $ Left (e :: E.IOException))
+                    (liftM Right $ Prelude.readFile fp)
+    case contents of
+        Left e -> failure e
+        Right v -> return v
