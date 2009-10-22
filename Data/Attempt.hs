@@ -26,6 +26,7 @@ module Data.Attempt
     , attempt
     , makeHandler
     , AttemptHandler
+    , module Control.Monad.Attempt.Class
     ) where
 
 import qualified Control.Exception as E
@@ -56,6 +57,8 @@ instance Monad Attempt where
     (Failure e) >>= _ = Failure e
 instance MonadAttempt Attempt where
     failure = Failure
+    wrapFailure _ (Success v) = Success v
+    wrapFailure f (Failure e) = Failure $ f e
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
 --

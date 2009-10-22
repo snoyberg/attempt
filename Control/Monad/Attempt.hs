@@ -17,12 +17,12 @@
 module Control.Monad.Attempt
     ( AttemptT (..)
     , evalAttemptT
+    , module Data.Attempt
     ) where
 
 import Data.Attempt
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Attempt.Class
 import Control.Monad.Trans
 
 newtype AttemptT m v = AttemptT {
@@ -40,12 +40,11 @@ instance (Functor m, Monad m) => Monad (AttemptT m) where
         mv >>= attempt (return . Failure) (runAttemptT . f)
 instance (Functor m, Monad m) => MonadAttempt (AttemptT m) where
     failure = AttemptT . return . Failure
+    wrapFailure f (AttemptT mv) = AttemptT $ liftM (wrapFailure f) mv
 instance MonadTrans AttemptT where
-    lift = AttemptT . fmap' Success where
-        fmap' f m = m >>= return . f
+    lift = AttemptT . liftM Success where
 instance (Functor m, MonadIO m) => MonadIO (AttemptT m) where
-    liftIO = AttemptT . fmap' Success where
-        fmap' f m = liftIO m >>= return . f
+    liftIO = AttemptT . liftM Success . liftIO where
 instance (Functor m, Monad m) => FromAttempt (AttemptT m) where
     fromAttempt = attempt failure return
 
@@ -59,6 +58,4 @@ instance (Functor m, Monad m) => FromAttempt (AttemptT m) where
 evalAttemptT :: (Monad m, FromAttempt m)
              => AttemptT m v
              -> m v
-evalAttemptT = join . fmap' fromAttempt . runAttemptT where
-    fmap' :: Monad m => (a -> b) -> m a -> m b
-    fmap' f ma = ma >>= return . f
+evalAttemptT = join . liftM fromAttempt . runAttemptT where
