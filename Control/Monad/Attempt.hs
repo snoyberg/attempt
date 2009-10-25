@@ -29,23 +29,23 @@ newtype AttemptT m v = AttemptT {
     runAttemptT :: m (Attempt v)
 }
 
-instance (Functor m, Monad m) => Functor (AttemptT m) where
-    fmap f = AttemptT . fmap (fmap f) . runAttemptT
-instance (Functor m, Monad m) => Applicative (AttemptT m) where
+instance Monad m => Functor (AttemptT m) where
+    fmap f = AttemptT . liftM (liftM f) . runAttemptT
+instance Monad m => Applicative (AttemptT m) where
     pure = return
     (<*>) = ap
-instance (Functor m, Monad m) => Monad (AttemptT m) where
+instance Monad m => Monad (AttemptT m) where
     return = AttemptT . return . Success
     (AttemptT mv) >>= f = AttemptT $
         mv >>= attempt (return . Failure) (runAttemptT . f)
-instance (Functor m, Monad m) => MonadAttempt (AttemptT m) where
+instance Monad m => MonadAttempt (AttemptT m) where
     failure = AttemptT . return . Failure
     wrapFailure f (AttemptT mv) = AttemptT $ liftM (wrapFailure f) mv
 instance MonadTrans AttemptT where
     lift = AttemptT . liftM Success where
-instance (Functor m, MonadIO m) => MonadIO (AttemptT m) where
+instance MonadIO m => MonadIO (AttemptT m) where
     liftIO = AttemptT . liftM Success . liftIO where
-instance (Functor m, Monad m) => FromAttempt (AttemptT m) where
+instance Monad m => FromAttempt (AttemptT m) where
     fromAttempt = attempt failure return
 
 -- | Instances of 'FromAttempt' specify a manner for embedding 'Attempt'

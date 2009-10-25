@@ -33,7 +33,7 @@ import Data.Generics
 -- 'failureString'; 'fail' should not be used at all.
 --
 -- Minimal complete definition: 'failure' and 'wrapFailure'.
-class (Functor m, Monad m) => MonadAttempt m where
+class Monad m => MonadAttempt m where
     failure :: Exception e => e -> m v
 
     -- | Call 'failure' by wrapping the argument in a 'StringException'.
