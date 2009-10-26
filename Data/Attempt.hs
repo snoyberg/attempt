@@ -21,12 +21,23 @@
 -- you want this kind of functionality, something like control-monad-exception
 -- might be a more appropriate fit.
 module Data.Attempt
-    ( Attempt (..)
+    ( -- * Data type and type class
+      Attempt (..)
     , FromAttempt (..)
     , fa
+      -- * General handling of 'Attempt's
     , attempt
     , makeHandler
-    , AttemptHandler
+    , AttemptHandler (..)
+      -- * Individual 'Attempt's
+    , isFailure
+    , isSuccess
+    , fromSuccess
+      -- * Lists of 'Attempt's
+    , successes
+    , failures
+    , partitionAttempts
+      -- * Reimport the 'MonadAttempt' class
     , module Control.Monad.Attempt.Class
     ) where
 
@@ -35,6 +46,7 @@ import Control.Monad (ap)
 import Control.Applicative
 import Data.Generics
 import Control.Monad.Attempt.Class
+import Data.Either (lefts)
 
 -- | Contains either a 'Success' value or a 'Failure' exception.
 data Attempt v =
@@ -121,3 +133,35 @@ makeHandler (AttemptHandler h:hs) v e =
 -- | A simple wrapper value necesary due to the Haskell type system. Wraps a
 -- function from a *specific* 'E.Exception' type to some value.
 data AttemptHandler v = forall e. E.Exception e => AttemptHandler (e -> v)
+
+
+-- | Tests for a 'Failure' value.
+isFailure :: Attempt v -> Bool
+isFailure = attempt (const True) (const False)
+
+-- | Tests for a 'Success' value.
+isSuccess :: Attempt v -> Bool
+isSuccess = attempt (const False) (const True)
+
+-- | This is an unsafe, partial function which should only be used if you
+-- either know that a function will succeed or don't mind the occassional
+-- runtime exception.
+fromSuccess :: Attempt v -> v
+fromSuccess = attempt (error . show) id
+
+-- | Returns only the 'Success' values.
+successes :: [Attempt v] -> [v]
+successes l = [ v | Success v <- l ]
+
+-- | Returns only the 'Failure' values, each wrapped in a 'SomeException'.
+failures :: [Attempt v] -> [E.SomeException]
+failures = lefts . map eitherExceptionFromAttempt where
+    eitherExceptionFromAttempt :: Attempt v -> Either E.SomeException v
+    eitherExceptionFromAttempt = fa
+
+-- | Return all of the 'Failure's and 'Success'es separately in a tuple.
+partitionAttempts :: [Attempt v] -> ([E.SomeException], [v])
+partitionAttempts = foldr (attempt f s) ([],[])
+ where
+  f a (l, r) = (E.SomeException a:l, r)
+  s a (l, r) = (l, a:r)
