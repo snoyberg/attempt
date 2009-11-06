@@ -25,6 +25,7 @@ module Data.Attempt
       Attempt (..)
     , FromAttempt (..)
     , fa
+    , joinAttempt
       -- * General handling of 'Attempt's
     , attempt
     , makeHandler
@@ -68,8 +69,9 @@ instance Monad Attempt where
     return = Success
     (Success v) >>= f = f v
     (Failure e) >>= _ = Failure e
-instance MonadAttempt Attempt where
+instance E.Exception e => MonadFailure e Attempt where
     failure = Failure
+instance WrapFailure Attempt where
     wrapFailure _ (Success v) = Success v
     wrapFailure f (Failure e) = Failure $ f e
 
@@ -104,6 +106,15 @@ instance FromAttempt (Either String) where
     fromAttempt = attempt (Left . show) Right
 instance FromAttempt (Either E.SomeException) where
     fromAttempt = attempt (Left . E.SomeException) Right
+
+-- | This is not a simple translation of the Control.Monad.join function.
+-- Instead, for 'Monad's which are instances of 'FromAttempt', it removes the
+-- inner 'Attempt' type, reporting errors as defined in the 'FromAttempt'
+-- instance.
+--
+-- For example, join (Just (failureString \"foo\")) == Nothing.
+joinAttempt :: (FromAttempt m, Monad m) => m (Attempt v) -> m v
+joinAttempt = (>>= fromAttempt)
 
 -- | Process either the exception or value in an 'Attempt' to produce a result.
 --

@@ -5,7 +5,7 @@ Haskell. We'll start off with some import statements.</p>
 > {-# LANGUAGE ExistentialQuantification #-}
 > import Data.Attempt
 > import Control.Monad.Attempt
-> import qualified Data.Attempt.Helper as A
+> import qualified Safe.Failure as A
 > import System.Environment (getArgs)
 > import Safe (readMay)
 > import Data.Generics
@@ -199,7 +199,7 @@ before:</p>
 > process7 = evalAttemptT . process5
 >
 > process8 :: FilePath -> IO Int
-> process8 = A.join . process6
+> process8 = joinAttempt . process6
 
 <p>Below is a simple main function for testing out these various functions. Try
 them out on the files in the input directory. Also, to simulate an IO error,
