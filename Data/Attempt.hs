@@ -76,7 +76,7 @@ instance Monad Attempt where
     (Failure st e) >>= _ = Failure st e
 instance E.Exception e => MonadFailure e Attempt where
     failure = Failure [] . E.SomeException
-instance WrapFailure Attempt where
+instance E.Exception e => WrapFailure e Attempt where
     wrapFailure _ (Success v) = Success v
     wrapFailure f (Failure st (E.SomeException e)) =
         Failure st $ E.SomeException $ f e

@@ -44,7 +44,7 @@ instance Monad m => Monad (AttemptT m) where
             Failure st e -> return $ Failure st e
 instance (Exception e, Monad m) => MonadFailure e (AttemptT m) where
     failure = AttemptT . return . Failure [] . SomeException
-instance Monad m => WrapFailure (AttemptT m) where
+instance (Monad m, Exception e) => WrapFailure e (AttemptT m) where
     wrapFailure f (AttemptT mv) = AttemptT $ liftM (wrapFailure f) mv
 instance MonadTrans AttemptT where
     lift = AttemptT . liftM Success where
