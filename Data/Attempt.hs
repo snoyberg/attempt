@@ -50,43 +50,39 @@ import Control.Monad.Attempt.Class
 import Data.Either (lefts)
 import Control.Monad.Loc
 
+type StackTrace = [String]
+showStack :: StackTrace -> String
+showStack = concatMap ((++) "\n    at ")
+
 -- | Contains either a 'Success' value or a 'Failure' exception.
 data Attempt v =
     Success v
-    | forall e. E.Exception e => Failure e
+    | Failure StackTrace E.SomeException
     deriving (Typeable)
 
 instance Show v => Show (Attempt v) where
     show (Success v) = "Success " ++ show v
-    show (Failure e) = "Failure " ++ show e
+    show (Failure st e) = "Failure " ++ show e ++ showStack st
 
 instance Functor Attempt where
     fmap f (Success v) = Success $ f v
-    fmap _ (Failure e) = Failure e
+    fmap _ (Failure s e) = Failure s e
 instance Applicative Attempt where
     pure = Success
     (<*>) = ap
 instance Monad Attempt where
     return = Success
     (Success v) >>= f = f v
-    (Failure e) >>= _ = Failure e
+    (Failure st e) >>= _ = Failure st e
 instance E.Exception e => MonadFailure e Attempt where
-    failure = Failure
+    failure = Failure [] . E.SomeException
 instance WrapFailure Attempt where
     wrapFailure _ (Success v) = Success v
-    wrapFailure f (Failure e) = Failure $ f e
+    wrapFailure f (Failure st (E.SomeException e)) =
+        Failure st $ E.SomeException $ f e
 instance MonadLoc Attempt where
     withLoc _ (Success v) = Success v
-    withLoc s (Failure e) = Failure $
-        case cast e of
-            Just (StackException e' s') -> StackException e' (s:s')
-            Nothing -> StackException e [s]
-
-data StackException = forall e. E.Exception e => StackException e [String]
-    deriving Typeable
-instance Show StackException where
-    show (StackException e stack) = show (e, stack)
-instance E.Exception StackException
+    withLoc s (Failure st e) = Failure (s:st) e
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
 --
@@ -140,7 +136,7 @@ attempt :: (forall e. E.Exception e => e -> b) -- ^ error handler
         -> Attempt a
         -> b
 attempt _ f (Success v) = f v
-attempt f _ (Failure e) = f e
+attempt f _ (Failure _ e) = f e
 
 -- | Convert multiple 'AttemptHandler's and a default value into an exception
 -- handler.
