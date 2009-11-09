@@ -1,1 +1,0 @@
-Remove Control.Monad.Attempt.Class entirely? Migrate failureString to c-m-f?

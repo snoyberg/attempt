@@ -20,5 +20,4 @@ library
                      monadloc >= 0.3
     exposed-modules: Data.Attempt
                      Control.Monad.Attempt
-                     Control.Monad.Attempt.Class
     ghc-options:     -Wall

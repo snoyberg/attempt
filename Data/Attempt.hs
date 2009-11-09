@@ -38,17 +38,17 @@ module Data.Attempt
     , successes
     , failures
     , partitionAttempts
-      -- * Reimport the 'MonadAttempt' class
-    , module Control.Monad.Attempt.Class
+      -- * Reexport the 'MonadFailure' class
+    , module Control.Monad.Failure
     ) where
 
 import qualified Control.Exception as E
 import Control.Monad (ap)
 import Control.Applicative
 import Data.Generics
-import Control.Monad.Attempt.Class
 import Data.Either (lefts)
 import Control.Monad.Loc
+import Control.Monad.Failure
 
 type StackTrace = [String]
 showStack :: StackTrace -> String
