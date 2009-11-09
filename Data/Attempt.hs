@@ -47,42 +47,30 @@ import Control.Monad (ap)
 import Control.Applicative
 import Data.Generics
 import Data.Either (lefts)
-import Control.Monad.Loc
 import Control.Monad.Failure
-
-type StackTrace = [String]
-showStack :: StackTrace -> String
-showStack = concatMap ((++) "\n    at ")
 
 -- | Contains either a 'Success' value or a 'Failure' exception.
 data Attempt v =
     Success v
-    | Failure StackTrace E.SomeException
-    deriving (Typeable)
-
-instance Show v => Show (Attempt v) where
-    show (Success v) = "Success " ++ show v
-    show (Failure st e) = "Failure " ++ show e ++ showStack st
+    | Failure E.SomeException
+    deriving (Show, Typeable)
 
 instance Functor Attempt where
     fmap f (Success v) = Success $ f v
-    fmap _ (Failure s e) = Failure s e
+    fmap _ (Failure e) = Failure e
 instance Applicative Attempt where
     pure = Success
     (<*>) = ap
 instance Monad Attempt where
     return = Success
     (Success v) >>= f = f v
-    (Failure st e) >>= _ = Failure st e
+    (Failure e) >>= _ = Failure e
 instance E.Exception e => MonadFailure e Attempt where
-    failure = Failure [] . E.SomeException
+    failure = Failure . E.SomeException
 instance E.Exception e => WrapFailure e Attempt where
     wrapFailure _ (Success v) = Success v
-    wrapFailure f (Failure st (E.SomeException e)) =
-        Failure st $ E.SomeException $ f e
-instance MonadLoc Attempt where
-    withLoc _ (Success v) = Success v
-    withLoc s (Failure st e) = Failure (s:st) e
+    wrapFailure f (Failure (E.SomeException e)) =
+        Failure $ E.SomeException $ f e
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
 --
@@ -136,7 +124,7 @@ attempt :: (forall e. E.Exception e => e -> b) -- ^ error handler
         -> Attempt a
         -> b
 attempt _ f (Success v) = f v
-attempt f _ (Failure _ e) = f e
+attempt f _ (Failure e) = f e
 
 -- | Convert multiple 'AttemptHandler's and a default value into an exception
 -- handler.
