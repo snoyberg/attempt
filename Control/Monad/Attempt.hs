@@ -25,6 +25,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Exception (Exception, SomeException (..))
+import Control.Monad.Loc
 
 newtype AttemptT m v = AttemptT {
     runAttemptT :: m (Attempt v)
@@ -52,6 +53,10 @@ instance MonadIO m => MonadIO (AttemptT m) where
     liftIO = AttemptT . liftM Success . liftIO where
 instance Monad m => FromAttempt (AttemptT m) where
     fromAttempt = attempt failure return
+instance MonadLoc m => MonadLoc (AttemptT m) where
+    withLoc loc (AttemptT a) = AttemptT $ do
+        current <- withLoc loc a
+        return $ withLoc loc current
 
 -- | Instances of 'FromAttempt' specify a manner for embedding 'Attempt'
 -- failures directly into the target data type. For example, the 'IO' instance

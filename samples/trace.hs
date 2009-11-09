@@ -2,21 +2,24 @@
 import Data.Attempt
 import qualified Safe.Failure as A
 import Control.Monad.Loc
+import Control.Monad.Attempt
 
-foo :: String -> Attempt Int
+--foo :: String -> AttemptT IO Int
 foo x = do
     A.read x
 
-bar :: String -> Attempt Int
+--bar :: String -> Attempt Int
 bar x = do
     y <- foo x
     return $ y + 2
 
-baz :: String -> Attempt Int
+--baz :: String -> Attempt Int
 baz x = do
     y <- bar x
     return $ y * 3
 
 main = do
-    print $ baz "hello"
-    print $ baz "5"
+    print $ (baz "hello" :: Attempt Int)
+    print $ (baz "5" :: Attempt Int)
+    runAttemptT (baz "hello" :: AttemptT IO Int) >>= print
+    runAttemptT (baz "5" :: AttemptT IO Int) >>= print
