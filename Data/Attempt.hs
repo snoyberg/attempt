@@ -48,6 +48,7 @@ import Control.Applicative
 import Data.Generics
 import Data.Either (lefts)
 import Control.Monad.Failure
+import Control.Monad.Loc
 
 -- | Contains either a 'Success' value or a 'Failure' exception.
 data Attempt v =
@@ -71,6 +72,10 @@ instance E.Exception e => WrapFailure e Attempt where
     wrapFailure _ (Success v) = Success v
     wrapFailure f (Failure (E.SomeException e)) =
         Failure $ E.SomeException $ f e
+instance MonadLoc Attempt where
+    withLoc _ (Success v) = Success v
+    withLoc s (Failure (E.SomeException e)) = failureAt s e
+
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
 --
