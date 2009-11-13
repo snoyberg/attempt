@@ -67,7 +67,7 @@ instance Monad Attempt where
     (Success v) >>= f = f v
     (Failure e) >>= _ = Failure e
 instance E.Exception e => MonadFailure e Attempt where
-    failure = Failure . E.toException
+    failure = Failure . E.SomeException
 instance E.Exception e => WrapFailure e Attempt where
     wrapFailure _ (Success v) = Success v
     wrapFailure f (Failure (E.SomeException e)) =
@@ -143,9 +143,7 @@ makeHandler [] v _ = v
 makeHandler (AttemptHandler h:hs) v e =
     case E.fromException (E.toException e) of
         Just e' -> h e'
-        Nothing -> case cast e of
-                    Just e'' -> h e''
-                    Nothing -> makeHandler hs v e
+        Nothing -> makeHandler hs v e
 
 -- | A simple wrapper value necesary due to the Haskell type system. Wraps a
 -- function from a *specific* 'E.Exception' type to some value.
