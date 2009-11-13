@@ -25,7 +25,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Loc
-import Control.Exception (Exception, SomeException (..))
+import Control.Exception (Exception)
 
 newtype AttemptT m v = AttemptT {
     runAttemptT :: m (Attempt v)
@@ -44,7 +44,7 @@ instance Monad m => Monad (AttemptT m) where
             Success v' -> runAttemptT $ f v'
             Failure e -> return $ Failure e
 instance (Exception e, Monad m) => MonadFailure e (AttemptT m) where
-    failure = AttemptT . return . Failure . SomeException
+    failure = AttemptT . return . Failure
 instance (Monad m, Exception e) => WrapFailure e (AttemptT m) where
     wrapFailure f (AttemptT mv) = AttemptT $ liftM (wrapFailure f) mv
 instance MonadTrans AttemptT where

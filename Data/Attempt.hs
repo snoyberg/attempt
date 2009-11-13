@@ -49,12 +49,18 @@ import Data.Generics
 import Data.Either (lefts)
 import Control.Monad.Failure
 import Control.Monad.Loc
-
+import GHC.Show (appPrec, appPrec1)
 -- | Contains either a 'Success' value or a 'Failure' exception.
-data Attempt v =
-    Success v
-    | Failure E.SomeException
-    deriving (Show, Typeable)
+data Attempt v
+  = Success v
+  | forall e. E.Exception e => Failure e
+    deriving (Typeable)
+
+instance Show v => Show (Attempt v) where
+  showsPrec p (Success v)
+    = showParen (p > appPrec) $ showString "Success " . showsPrec appPrec1 v
+  showsPrec p (Failure v)
+    = showParen (p > appPrec) $ showString "Failure " . showsPrec appPrec1 v
 
 instance Functor Attempt where
     fmap f (Success v) = Success $ f v
@@ -67,14 +73,13 @@ instance Monad Attempt where
     (Success v) >>= f = f v
     (Failure e) >>= _ = Failure e
 instance E.Exception e => MonadFailure e Attempt where
-    failure = Failure . E.SomeException
+    failure = Failure
 instance E.Exception e => WrapFailure e Attempt where
     wrapFailure _ (Success v) = Success v
-    wrapFailure f (Failure (E.SomeException e)) =
-        Failure $ E.SomeException $ f e
+    wrapFailure f (Failure e) = Failure $ f e
 instance MonadLoc Attempt where
     withLoc _ (Success v) = Success v
-    withLoc s (Failure (E.SomeException e)) = failureAt s e
+    withLoc s (Failure e) = failureAt s e
 
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
@@ -129,7 +134,7 @@ attempt :: (forall e. E.Exception e => e -> b) -- ^ error handler
         -> Attempt a
         -> b
 attempt _ f (Success v) = f v
-attempt f _ (Failure (E.SomeException e)) = f e
+attempt f _ (Failure e) = f e
 
 -- | Convert multiple 'AttemptHandler's and a default value into an exception
 -- handler.
