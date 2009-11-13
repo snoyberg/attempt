@@ -129,7 +129,7 @@ attempt :: (forall e. E.Exception e => e -> b) -- ^ error handler
         -> Attempt a
         -> b
 attempt _ f (Success v) = f v
-attempt f _ (Failure e) = f e
+attempt f _ (Failure (E.SomeException e)) = f e
 
 -- | Convert multiple 'AttemptHandler's and a default value into an exception
 -- handler.
