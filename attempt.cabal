@@ -1,8 +1,8 @@
 name:            attempt
-version:         0.0.1
+version:         0.0.2
 license:         BSD3
 license-file:    LICENSE
-author:          Michael Snoyman <michael@snoyman.com>
+author:          Michael Snoyman, Nicolas Pouillard
 maintainer:      Michael Snoyman <michael@snoyman.com>
 synopsis:        Error handling using extensible exceptions outside the IO monad.
 description:     Defines a data type, Attempt, which has a Success and Failure constructor. Failure contains an extensible exception.

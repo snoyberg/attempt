@@ -134,24 +134,25 @@ attempt :: (forall e. E.Exception e => e -> b) -- ^ error handler
         -> Attempt a
         -> b
 attempt _ f (Success v) = f v
-attempt f _ (Failure e) = f e
+attempt f _ (Failure (E.SomeException e)) = f e
 
 -- | Convert multiple 'AttemptHandler's and a default value into an exception
 -- handler.
 --
 -- This is a convenience function when you want to have special handling for a
 -- few types of 'E.Exception's and provide another value for anything else.
-makeHandler :: [AttemptHandler v] -> v -> (forall e. E.Exception e => e -> v)
+makeHandler :: [AttemptHandler v]
+            -> v
+            -> (forall e. E.Exception e => e -> v)
 makeHandler [] v _ = v
 makeHandler (AttemptHandler h:hs) v e =
-    case cast e of
-        Nothing -> makeHandler hs v e
+    case E.fromException (E.toException e) of
         Just e' -> h e'
+        Nothing -> makeHandler hs v e
 
 -- | A simple wrapper value necesary due to the Haskell type system. Wraps a
 -- function from a *specific* 'E.Exception' type to some value.
 data AttemptHandler v = forall e. E.Exception e => AttemptHandler (e -> v)
-
 
 -- | Tests for a 'Failure' value.
 isFailure :: Attempt v -> Bool
