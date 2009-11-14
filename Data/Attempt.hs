@@ -112,7 +112,7 @@ instance FromAttempt [] where
 instance FromAttempt (Either String) where
     fromAttempt = attempt (Left . show) Right
 instance FromAttempt (Either E.SomeException) where
-    fromAttempt = attempt (Left . E.SomeException) Right
+    fromAttempt = attempt (Left . E.toException) Right
 
 -- | This is not a simple translation of the Control.Monad.join function.
 -- Instead, for 'Monad's which are instances of 'FromAttempt', it removes the
@@ -182,5 +182,5 @@ failures = lefts . map eitherExceptionFromAttempt where
 partitionAttempts :: [Attempt v] -> ([E.SomeException], [v])
 partitionAttempts = foldr (attempt f s) ([],[])
  where
-  f a (l, r) = (E.SomeException a:l, r)
+  f a (l, r) = (E.toException a:l, r)
   s a (l, r) = (l, a:r)
