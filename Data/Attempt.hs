@@ -60,8 +60,10 @@ data Attempt v
 instance Show v => Show (Attempt v) where
   showsPrec p (Success v)
     = showParen (p > appPrec) $ showString "Success " . showsPrec appPrec1 v
-  showsPrec p (Failure v _) -- FIXME this does not reflect the stack trace
-    = showParen (p > appPrec) $ showString "Failure " . showsPrec appPrec1 v
+  showsPrec p (Failure st v)
+    = showParen (p > appPrec) $
+        showString "Failure " . showsPrec appPrec1 st . showString " "
+                              . showsPrec appPrec1 v
 
 instance Functor Attempt where
     fmap f (Success v) = Success $ f v
