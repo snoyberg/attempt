@@ -37,20 +37,18 @@ instance Monad m => Applicative (AttemptT m) where
     pure = return
     (<*>) = ap
 instance Monad m => Monad (AttemptT m) where
-    return = AttemptT . return . Success
+    return = AttemptT . return . return
     (AttemptT mv) >>= f = AttemptT $ do
         v <- mv
-        case v of
-            Success v' -> runAttemptT $ f v'
-            Failure e -> return $ Failure e
+        attempt (return . failure) (runAttemptT . f) v
 instance (Exception e, Monad m) => MonadFailure e (AttemptT m) where
-    failure = AttemptT . return . Failure
+    failure = AttemptT . return . failure
 instance (Monad m, Exception e) => WrapFailure e (AttemptT m) where
     wrapFailure f (AttemptT mv) = AttemptT $ liftM (wrapFailure f) mv
 instance MonadTrans AttemptT where
-    lift = AttemptT . liftM Success where
+    lift = AttemptT . liftM return where
 instance MonadIO m => MonadIO (AttemptT m) where
-    liftIO = AttemptT . liftM Success . liftIO where
+    liftIO = AttemptT . liftM return . liftIO where
 instance Monad m => FromAttempt (AttemptT m) where
     fromAttempt = attempt failure return
 instance MonadLoc m => MonadLoc (AttemptT m) where

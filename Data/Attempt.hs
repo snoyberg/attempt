@@ -22,10 +22,11 @@
 -- might be a more appropriate fit.
 module Data.Attempt
     ( -- * Data type and type class
-      Attempt (..)
+      Attempt
     , FromAttempt (..)
     , fa
     , joinAttempt
+    , monadicStackTrace
       -- * General handling of 'Attempt's
     , attempt
     , makeHandler
@@ -53,34 +54,33 @@ import GHC.Show (appPrec, appPrec1)
 -- | Contains either a 'Success' value or a 'Failure' exception.
 data Attempt v
   = Success v
-  | forall e. E.Exception e => Failure e
+  | forall e. E.Exception e => Failure [String] e
     deriving (Typeable)
 
 instance Show v => Show (Attempt v) where
   showsPrec p (Success v)
     = showParen (p > appPrec) $ showString "Success " . showsPrec appPrec1 v
-  showsPrec p (Failure v)
+  showsPrec p (Failure v _) -- FIXME this does not reflect the stack trace
     = showParen (p > appPrec) $ showString "Failure " . showsPrec appPrec1 v
 
 instance Functor Attempt where
     fmap f (Success v) = Success $ f v
-    fmap _ (Failure e) = Failure e
+    fmap _ (Failure st e) = Failure st e
 instance Applicative Attempt where
     pure = Success
     (<*>) = ap
 instance Monad Attempt where
     return = Success
     (Success v) >>= f = f v
-    (Failure e) >>= _ = Failure e
+    (Failure st e) >>= _ = Failure st e
 instance E.Exception e => MonadFailure e Attempt where
-    failure = Failure
+    failure = Failure []
 instance E.Exception e => WrapFailure e Attempt where
     wrapFailure _ (Success v) = Success v
-    wrapFailure f (Failure e) = Failure $ f e
+    wrapFailure f (Failure st e) = Failure st $ f e
 instance MonadLoc Attempt where
     withLoc _ (Success v) = Success v
-    withLoc s (Failure e) = failureAt s e
-
+    withLoc s (Failure st e) = Failure (s:st) e
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
 --
@@ -123,18 +123,29 @@ instance FromAttempt (Either E.SomeException) where
 joinAttempt :: (FromAttempt m, Monad m) => m (Attempt v) -> m v
 joinAttempt = (>>= fromAttempt)
 
+-- | Extra the monadic stack trace from the given 'Attempt' value. Returns the
+-- empty list when the given value is a 'Success'.
+monadicStackTrace :: Attempt a -> [String]
+monadicStackTrace (Success _) = []
+monadicStackTrace (Failure st _) = st
+
 -- | Process either the exception or value in an 'Attempt' to produce a result.
 --
 -- This function is modeled after 'maybe' and 'either'. The first argument must
 -- accept any instances of 'E.Exception'. If you want to handle multiple types
 -- of exceptions, see 'makeHandler'. The second argument converts the success
 -- value.
+--
+-- Note that this function does not expose all the data available in an
+-- 'Attempt' value. Notably, the monadic stack trace is not passed on to the
+-- error handler. If desired, use the 'monadicStackTrace' function to extract
+-- it.
 attempt :: (forall e. E.Exception e => e -> b) -- ^ error handler
         -> (a -> b) -- ^ success handler
         -> Attempt a
         -> b
 attempt _ f (Success v) = f v
-attempt f _ (Failure e) = f e
+attempt f _ (Failure _ e) = f e
 
 -- | Convert multiple 'AttemptHandler's and a default value into an exception
 -- handler.
