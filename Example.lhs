@@ -88,7 +88,7 @@ form:</p>
 >
 > process2 :: FilePath -> IO (Attempt Int)
 > process2 filePath =
->   E.handle (\e -> return $ Failure (e :: E.IOException)) $ do
+>   E.handle (\e -> return $ failure (e :: E.IOException)) $ do
 >       contents <- readFile filePath
 >       return $ case lines contents of
 >           [num1S, opS, num2S] ->
@@ -97,11 +97,11 @@ form:</p>
 >                       case readMay opS of
 >                           Just op ->
 >                               case readMay num2S of
->                                   Just num2 -> Success $ toFunc op num1 num2
->                                   Nothing -> Failure $ NotInt num2S
->                           Nothing -> Failure $ NotOperator opS
->                   Nothing -> Failure $ NotInt num1S
->           _ -> Failure $ NotThreeLines contents
+>                                   Just num2 -> return $ toFunc op num1 num2
+>                                   Nothing -> failure $ NotInt num2S
+>                           Nothing -> failure $ NotOperator opS
+>                   Nothing -> failure $ NotInt num1S
+>           _ -> failure $ NotThreeLines contents
 
 <p>If you run these on the sample files in the input directory, you'll see that
 we're getting the right result; the program in not erroring out, simply
@@ -124,7 +124,7 @@ function.</li>
 > instance E.Exception ProcessErrorWrapper
 > process3 :: FilePath -> IO (Attempt Int)
 > process3 filePath =
->   E.handle (\e -> return $ Failure (e :: E.IOException)) $ do
+>   E.handle (\e -> return $ failure (e :: E.IOException)) $ do
 >       contents <- readFile filePath
 >       return $ case lines contents of
 >           [num1S, opS, num2S] -> do
@@ -132,7 +132,7 @@ function.</li>
 >               op   <- wrapFailure BadOperatorWrapper $ A.read opS
 >               num2 <- wrapFailure BadIntWrapper $ A.read num2S
 >               return $ toFunc op num1 num2
->           _ -> Failure $ NotThreeLines contents
+>           _ -> failure $ NotThreeLines contents
 
 <p>That certainly cleaned stuff up. The special read function works just as you
 would expected: if the read succeeds, it returns a Success value. Otherwise,
@@ -148,7 +148,7 @@ annoying. Let's get rid of it.</p>
 
 > process4 :: FilePath -> IO (Attempt Int)
 > process4 filePath =
->   E.handle (\e -> return $ Failure (e :: E.IOException)) $ do
+>   E.handle (\e -> return $ failure (e :: E.IOException)) $ do
 >       contents <- readFile filePath
 >       return $ do
 >           let contents' = lines contents
