@@ -3,7 +3,6 @@ Haskell. We'll start off with some import statements.</p>
 
 > {-# LANGUAGE DeriveDataTypeable #-}
 > {-# LANGUAGE ExistentialQuantification #-}
-> import Data.Attempt
 > import Control.Monad.Attempt
 > import qualified Safe.Failure as A
 > import System.Environment (getArgs)
