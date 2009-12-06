@@ -4,7 +4,7 @@ license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman, Nicolas Pouillard
 maintainer:      Michael Snoyman <michael@snoyman.com>
-synopsis:        Failure handling using extensible exceptions outside the IO monad.
+synopsis:        Concrete data type for handling extensible exceptions as failures.
 description:     Defines a data type, Attempt, which has a Success and Failure constructor. Failure contains an extensible exception.
 category:        Data, Failure
 stability:       stable

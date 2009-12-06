@@ -1,7 +1,1 @@
-Error handling using extensible exceptions outside the IO monad.
-
-Contributors
-Nicolas Pouillard- big kudos, all the good ideas here came from him.
-
-Usage
-Please see the Example.lhs file for an overview of how to use the library.
+Concrete data type for handling extensible exceptions as failures.
