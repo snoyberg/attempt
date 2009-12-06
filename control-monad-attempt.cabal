@@ -10,7 +10,7 @@ category:        Data, Failure
 stability:       stable
 cabal-version:   >= 1.2
 build-type:      Simple
-homepage:        http://github.com/snoyberg/attempt/tree/master
+homepage:        http://github.com/snoyberg/attempt/tree/transformer
 
 library
     build-depends:   base >= 4 && < 5,
