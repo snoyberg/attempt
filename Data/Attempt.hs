@@ -22,7 +22,7 @@
 -- might be a more appropriate fit.
 module Data.Attempt
     ( -- * Data type and type class
-      Attempt
+      Attempt (..)
     , FromAttempt (..)
     , fa
     , joinAttempt
