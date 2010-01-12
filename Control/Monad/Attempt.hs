@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Rank2Types #-}
 ---------------------------------------------------------
 --
 -- Module        : Control.Monad.Attempt
@@ -17,6 +18,8 @@
 module Control.Monad.Attempt
     ( AttemptT (..)
     , evalAttemptT
+    , attemptT
+    , catchRuntime
     , module Data.Attempt
     ) where
 
@@ -24,7 +27,7 @@ import Data.Attempt
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
-import Control.Exception (Exception)
+import Control.Exception (Exception, handle)
 
 newtype AttemptT m v = AttemptT {
     runAttemptT :: m (Attempt v)
@@ -62,3 +65,26 @@ evalAttemptT :: (Monad m, FromAttempt m)
              => AttemptT m v
              -> m v
 evalAttemptT = join . liftM fromAttempt . runAttemptT where
+
+-- | The equivalent of 'attempt' for transformers. Given a success and failure
+-- handler, eliminates the 'AttemptT' portion of the transformer stack.
+attemptT :: Monad m
+         => (forall e. Exception e => e -> b)
+         -> (a -> b)
+         -> AttemptT m a
+         -> m b
+attemptT s f = liftM (attempt s f) . runAttemptT
+
+-- | Catches runtime (ie, IO) exceptions and represents them in an 'AttemptT'
+-- transformer.
+--
+-- Like 'handle', the first argument to this function must explicitly state the
+-- type of its input.
+catchRuntime :: (Exception eIn, Exception eOut)
+             => (eIn -> eOut)
+             -> IO v
+             -> AttemptT IO v
+catchRuntime f =
+      AttemptT
+    . handle (return . Failure . f)
+    . fmap Success
