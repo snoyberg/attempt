@@ -38,6 +38,8 @@ module Data.Attempt
     , successes
     , failures
     , partitionAttempts
+      -- * Runtime exceptions
+    , attemptIO
       -- * Reexport the 'Failure' class
     , module Control.Failure
     ) where
@@ -185,3 +187,15 @@ partitionAttempts = foldr (attempt f s) ([],[])
  where
   f a (l, r) = (E.toException a:l, r)
   s a (l, r) = (l, a:r)
+
+-- | Catches runtime (ie, IO) exceptions inserts them into an 'Attempt'.
+--
+-- Like 'handle', the first argument to this function must explicitly state the
+-- type of its input.
+attemptIO :: (E.Exception eIn, E.Exception eOut)
+          => (eIn -> eOut)
+          -> IO v
+          -> IO (Attempt v)
+attemptIO f =
+      E.handle (return . Failure . f)
+    . fmap Success
