@@ -19,7 +19,7 @@ module Control.Monad.Attempt
     ( AttemptT (..)
     , evalAttemptT
     , attemptT
-    , catchRuntime
+    , attemptTIO
     , module Data.Attempt
     ) where
 
@@ -80,11 +80,11 @@ attemptT s f = liftM (attempt s f) . runAttemptT
 --
 -- Like 'handle', the first argument to this function must explicitly state the
 -- type of its input.
-catchRuntime :: (Exception eIn, Exception eOut)
-             => (eIn -> eOut)
-             -> IO v
-             -> AttemptT IO v
-catchRuntime f =
+attemptTIO :: (Exception eIn, Exception eOut)
+           => (eIn -> eOut)
+           -> IO v
+           -> AttemptT IO v
+attemptTIO f =
       AttemptT
     . handle (return . Failure . f)
     . fmap Success
