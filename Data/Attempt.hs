@@ -47,7 +47,7 @@ module Data.Attempt
 import qualified Control.Exception as E
 import Control.Monad (ap)
 import Control.Applicative
-import Data.Generics
+import Data.Data
 import Data.Either (lefts)
 import Control.Failure
 import GHC.Show (appPrec, appPrec1)
