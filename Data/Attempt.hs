@@ -188,7 +188,7 @@ partitionAttempts = foldr (attempt f s) ([],[])
   f a (l, r) = (E.toException a:l, r)
   s a (l, r) = (l, a:r)
 
--- | Catches runtime (ie, IO) exceptions inserts them into an 'Attempt'.
+-- | Catches runtime (ie, IO) exceptions and inserts them into an 'Attempt'.
 --
 -- Like 'handle', the first argument to this function must explicitly state the
 -- type of its input.
