@@ -3,6 +3,8 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE TypeFamilies #-}
+
 ---------------------------------------------------------
 --
 -- Module        : Data.Attempt
@@ -79,6 +81,11 @@ instance E.Exception e => Failure e Attempt where
 instance E.Exception e => WrapFailure e Attempt where
     wrapFailure _ (Success v) = Success v
     wrapFailure f (Failure e) = Failure $ f e
+
+instance Try Attempt where
+    type Error Attempt = E.SomeException
+    try (Success v) = return v
+    try (Failure e) = failure $ E.toException e
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
 --
