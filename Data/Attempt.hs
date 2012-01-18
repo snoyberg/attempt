@@ -78,14 +78,6 @@ instance Monad Attempt where
     (Failure e) >>= _ = Failure e
 instance E.Exception e => Failure e Attempt where
     failure = Failure
-instance E.Exception e => WrapFailure e Attempt where
-    wrapFailure _ (Success v) = Success v
-    wrapFailure f (Failure e) = Failure $ f e
-
-instance Try Attempt where
-    type Error Attempt = E.SomeException
-    try (Success v) = return v
-    try (Failure e) = failure $ E.toException e
 
 -- | Any type which can be converted from an 'Attempt'. The included instances are your \"usual suspects\" for dealing with error handling. They include:
 --
@@ -190,10 +182,15 @@ failures = lefts . map eitherExceptionFromAttempt where
 
 -- | Return all of the 'Failure's and 'Success'es separately in a tuple.
 partitionAttempts :: [Attempt v] -> ([E.SomeException], [v])
-partitionAttempts = foldr (attempt f s) ([],[])
- where
-  f a (l, r) = (E.toException a:l, r)
-  s a (l, r) = (l, a:r)
+partitionAttempts =
+    foldr (attempt f s) ([],[])
+  where
+    f :: E.Exception e
+      => e
+      -> ([E.SomeException], [v])
+      -> ([E.SomeException], [v])
+    f a (l, r) = (E.toException a:l, r)
+    s a (l, r) = (l, a:r)
 
 -- | Catches runtime (ie, IO) exceptions and inserts them into an 'Attempt'.
 --
